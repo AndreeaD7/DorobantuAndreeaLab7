@@ -2,42 +2,62 @@ namespace DorobantuAndreeaLab7;
 
 public partial class ProductPage : ContentPage
 {
-    ShopList sl;
-    public ProductPage(ShopList slist)
-    {
-		InitializeComponent();
-        sl = slist;
-    }
-    async void OnAddButtonClicked(object sender, EventArgs e)
-    {
+    private ShopList _shopList;
 
-        Product p;
-        if (listView.SelectedItem != null)
+    public ProductPage(ShopList shopList)
+    {
+        InitializeComponent();
+        _shopList = shopList;
+    }
+
+    // Event handler for adding a product to the shopping list
+    private async void OnAddButtonClicked(object sender, EventArgs e)
+    {
+        if (listView.SelectedItem is Product selectedProduct)
         {
-            p = listView.SelectedItem as Product;
-            var lp = new ListProduct()
+            var listProduct = new ListProduct
             {
-                ShopListID = sl.ID,
-                ProductID = p.ID
+                ShopListID = _shopList.ID,
+                ProductID = selectedProduct.ID
             };
-            await App.Database.SaveListProductAsync(lp);
-            p.ListProducts = new List<ListProduct> { lp };
 
-            await Navigation.PopAsync();
+            await App.Database.SaveListProductAsync(listProduct);
+
+          
+            selectedProduct.ListProducts = new List<ListProduct> { listProduct };
+
+            await Navigation.PopAsync(); // Return to the previous page
         }
-        async void OnSaveButtonClicked(object sender, EventArgs e)
-    {
-        var product = (Product)BindingContext;
-        await App.Database.SaveProductAsync(product);
-        listView.ItemsSource = await App.Database.GetProductsAsync();
+        else
+        {
+            await DisplayAlert("Error", "Please select a product to add.", "OK");
+        }
     }
 
-    async void OnDeleteButtonClicked(object sender, EventArgs e)
+
+    private async void OnSaveButtonClicked(object sender, EventArgs e)
     {
-        var product = listView.SelectedItem as Product;
-        await App.Database.DeleteProductAsync(product);
-        listView.ItemsSource = await App.Database.GetProductsAsync();
+        if (BindingContext is Product product)
+        {
+            await App.Database.SaveProductAsync(product);
+            listView.ItemsSource = await App.Database.GetProductsAsync();
+        }
     }
+
+    
+    private async void OnDeleteButtonClicked(object sender, EventArgs e)
+    {
+        if (listView.SelectedItem is Product selectedProduct)
+        {
+            await App.Database.DeleteProductAsync(selectedProduct);
+            listView.ItemsSource = await App.Database.GetProductsAsync();
+        }
+        else
+        {
+            await DisplayAlert("Error", "Please select a product to delete.", "OK");
+        }
+    }
+
 
     protected override async void OnAppearing()
     {
